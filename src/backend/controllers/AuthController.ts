@@ -7,16 +7,12 @@ import { createAccessToken, createRefreshToken } from '../utils/authUtils';
 
 const signInUser = async (req: Request, res: Response) => {
     try {
-        console.log('work')
-        console.log(req.body);
         const { email, password } = req.body;
-        console.log(email, password);
         const user = await prisma.user.findFirst({
             where: {
                 email: email.toLowerCase(),
             }
         })
-        console.log(user);
         if (!user) {
             res.status(401).json({
                 success: false,
@@ -46,8 +42,6 @@ const signInUser = async (req: Request, res: Response) => {
 
 const signUpUser = async (req: Request, res: Response) => {
     try {
-        console.log('work')
-        console.log(req.body);
         const { email, username, password, firstName, lastName } = req.body;
         const data = {
             email: email.toLowerCase(),
@@ -77,6 +71,10 @@ const signUpUser = async (req: Request, res: Response) => {
     }
     catch (error) {
         console.log(error)
+        res.status(400).json({
+            success: false,
+            message: "User creation failed"
+        })
     }
 
 }
