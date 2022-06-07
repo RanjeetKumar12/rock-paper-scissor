@@ -5,12 +5,12 @@ import { compareSync, hashSync } from 'bcryptjs';
 import 'dotenv/config';
 import { createAccessToken, createRefreshToken } from '../utils/authUtils';
 
-const singInUser = async (req: Request, res: Response) => {
+const signInUser = async (req: Request, res: Response) => {
     try {
         const { email, password } = req.body;
         const user = await prisma.user.findFirst({
             where: {
-                email
+                email: email.toLowerCase(),
             }
         })
         if (!user) {
@@ -18,11 +18,12 @@ const singInUser = async (req: Request, res: Response) => {
                 success: false,
                 message: "Wrong Email Address"
             })
+            return
         }
-        const valid = compareSync(password, user.password);
+        const valid = compareSync(password, user!.password);
         if (valid) {
-            res.cookie("Atoken", createAccessToken(user.userId), { httpOnly: true, maxAge: 60 * 60 * 15 })
-            res.cookie("Rtoken", createRefreshToken(user.userId), { httpOnly: true, maxAge: 60 * 60 * 24 * 7 })
+            res.cookie("Atoken", createAccessToken(user!.userId), { httpOnly: true, maxAge: 60 * 60 * 15 })
+            res.cookie("Rtoken", createRefreshToken(user!.userId), { httpOnly: true, maxAge: 60 * 60 * 24 * 7 })
             res.status(200).json({
                 success: true,
                 user
@@ -49,22 +50,31 @@ const signUpUser = async (req: Request, res: Response) => {
             firstName,
             lastName
         };
+
         const oldUser = await prisma.user.findFirst({
             where: {
                 email
             }
         })
         if (oldUser) {
-            res.send(409).json({
+            res.send(400).json({
                 success: false,
                 message: "User already exists"
             })
         }
 
         await prisma.user.create({ data })
+        res.status(201).json({
+            success: true,
+            message: "User created successfully"
+        })
     }
     catch (error) {
-
+        console.log(error)
+        res.status(400).json({
+            success: false,
+            message: "User creation failed"
+        })
     }
 
 }
@@ -72,7 +82,11 @@ const signUpUser = async (req: Request, res: Response) => {
 const signOutUser = async (req: Request, res: Response) => {
     res.cookie("Atoken", "", { httpOnly: true, maxAge: 60 });
     res.cookie("Rtoken", "", { httpOnly: true, maxAge: 60 });
+    res.status(200).json({
+        success: true,
+        message: "User signed out successfully"
+    })
 
 }
 
-export { singInUser, signUpUser, signOutUser }
+export { signInUser, signUpUser, signOutUser }
